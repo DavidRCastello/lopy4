@@ -237,7 +237,7 @@ client = MQTTClient(sensorId, serverIP) #,user="your_username", password="your_a
 client.set_callback(sub_cb)
 client.connect()
 #Subscription at the selected topic of the server broker
-client.subscribe("pycom")
+client.subscribe(topic)
 
 #Sync with NTP server
 rtc = machine.RTC()
