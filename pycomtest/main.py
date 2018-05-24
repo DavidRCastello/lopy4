@@ -213,24 +213,30 @@ import machine
 import time
 import pycom
 
+wifiSSID = "WLAN_5169"
+wifiPASS = "ROUTER.314159"
 topic = "pycom"
 serverIP = "192.168.1.36"
 sensorId = "sensor1"
 
+#Create the necessary callback for the MQTT.check_msg() method. It could be useful
+#to debug the code
 def sub_cb(topic, msg):
    print(msg)
 
+#Connect the lopy4 to the wifi network.
 wlan = WLAN(mode=WLAN.STA)
-wlan.connect("WLAN_5169", auth=(WLAN.WPA2, "ROUTER.314159"), timeout=5000)
-
+wlan.connect(wifiSSID, auth=(WLAN.WPA2, wifiPASS), timeout=5000)
 while not wlan.isconnected():
     machine.idle()
 print("Connected to Wifi\n")
 
+#Create the MQTT client using its ID and the server IP where we want to connect the device
 client = MQTTClient(sensorId, serverIP) #,user="your_username", password="your_api_key", port=1883
 
 client.set_callback(sub_cb)
 client.connect()
+#Subscription at the selected topic of the server broker
 client.subscribe("pycom")
 
 #Sync with NTP server
@@ -241,18 +247,21 @@ time.sleep(1)
 #Due to some microPython library issues, the UTC should be hardcoded
 timezone = "02"
 while True:
+    #Extracts from the Real Time Clock the system's date/hour
     rawTs = time.localtime()
-
     tsArray = []
+    #Transform all the values to string for an easier manipulation
     for value in rawTs:
          tsArray.append(str(value))
+    #Create the final string timestamp to send to the server
     timestamp = tsArray[0]+"-"+tsArray[1]+"-"+tsArray[2]+" "+tsArray[3]+":"+tsArray[4]+":"+tsArray[5]+"+"+timezone
-    print(timestamp)
 
-    #(2018, 5, 23, 9, 39, 18, 2, 143)
+    #Creates the message to send
     msg = '{\"timestamp\":\"'+timestamp+'\",\"sensor\":\"'+sensorId+'\",\"measurement\":4095}'
 
+    #Publication of the message in the server broker
     client.publish(topic, msg=msg)
-    #client.check_msg()
+
+    #client.check_msg() #Uncomment if the user wants to know which message is printed in the broker
 
     time.sleep(1)
