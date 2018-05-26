@@ -239,6 +239,12 @@ client.connect()
 #Subscription at the selected topic of the server broker
 client.subscribe(topic)
 
+#Instance and calibrate the ADC with the internal 1,1V connection
+adc = machine.ADC(0)
+adc_c = adc.channel(pin='P13',attn=machine.ADC.ATTN_11DB)
+adc_c()
+#Set the maximum value of the current that will be measured in order to make a conversion
+max_current = 150
 #Sync with NTP server
 rtc = machine.RTC()
 rtc.ntp_sync("es.pool.ntp.org")
@@ -256,8 +262,12 @@ while True:
     #Create the final string timestamp to send to the server
     timestamp = tsArray[0]+"-"+tsArray[1]+"-"+tsArray[2]+" "+tsArray[3]+":"+tsArray[4]+":"+tsArray[5]+"+"+timezone
 
+    #Measure the current value and transform it to mA
+    val = adc_c.value()
+    val = val*max_current/4095
+
     #Creates the message to send
-    msg = '{\"timestamp\":\"'+timestamp+'\",\"sensor\":\"'+sensorId+'\",\"measurement\":4095}'
+    msg = '{\"timestamp\":\"'+timestamp+'\",\"sensor\":\"'+sensorId+'\",\"measurement\":'+str(val)+'}'
 
     #Publication of the message in the server broker
     client.publish(topic, msg=msg)
